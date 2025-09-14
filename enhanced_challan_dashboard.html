@@ -1,0 +1,1412 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Enhanced Main Challan Dashboard</title>
+  <!-- CDN libraries -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root{
+      --primary:#2563eb;--primary-dark:#1e40af;--secondary:#10b981;--accent:#f59e0b;
+      --danger:#ef4444;--warning:#f59e0b;--success:#10b981;--info:#3b82f6;
+      --bg-primary:#ffffff;--bg-secondary:#f8fafc;--bg-tertiary:#f1f5f9;
+      --text-primary:#0f172a;--text-secondary:#64748b;--text-muted:#94a3b8;
+      --border:#e2e8f0;--shadow:0 4px 6px -1px rgba(0,0,0,0.1);
+      --shadow-lg:0 10px 15px -3px rgba(0,0,0,0.1);
+      --radius:8px;--radius-lg:12px;
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+    
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      padding: 20px;
+      border-radius: var(--radius-lg);
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-lg);
+    }
+    
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .header .subtitle {
+      opacity: 0.9;
+      font-size: 14px;
+      margin-top: 4px;
+    }
+    
+    .controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    .btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+    
+    .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+    .btn-secondary { background: var(--secondary); }
+    .btn-accent { background: var(--accent); }
+    .btn-danger { background: var(--danger); }
+    .btn-outline { background: transparent; border: 2px solid rgba(255,255,255,0.3); }
+    .btn-outline:hover { background: rgba(255,255,255,0.1); }
+    
+    input[type=file] { display: none; }
+    
+    /* KPI Cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    
+    .kpi-card {
+      background: var(--bg-primary);
+      padding: 20px;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      border-left: 4px solid var(--primary);
+      transition: transform 0.2s ease;
+    }
+    
+    .kpi-card:hover { transform: translateY(-2px); }
+    .kpi-card.success { border-left-color: var(--success); }
+    .kpi-card.warning { border-left-color: var(--warning); }
+    .kpi-card.info { border-left-color: var(--info); }
+    .kpi-card.accent { border-left-color: var(--accent); }
+    
+    .kpi-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    
+    .kpi-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .kpi-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--primary);
+      color: white;
+      font-size: 14px;
+    }
+    
+    .kpi-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+    
+    .kpi-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    
+    /* Layout Grid */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 24px;
+    }
+    
+    @media (max-width: 1200px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+    
+    /* Charts */
+    .chart-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    
+    @media (max-width: 768px) {
+      .chart-grid { grid-template-columns: 1fr; }
+    }
+    
+    .chart-card {
+      background: var(--bg-primary);
+      padding: 20px;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+    }
+    
+    .chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .chart-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    canvas { width: 100% !important; height: 280px !important; }
+    
+    /* Sidebar */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .filter-card {
+      background: var(--bg-primary);
+      padding: 20px;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+    }
+    
+    .filter-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .filter-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    .form-group {
+      margin-bottom: 16px;
+    }
+    
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+    
+    input, select {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 14px;
+      transition: border-color 0.2s ease;
+    }
+    
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    
+    .date-range {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    
+    .date-range input {
+      flex: 1;
+    }
+    
+    .filter-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    
+    .filter-actions .btn {
+      flex: 1;
+      justify-content: center;
+      font-size: 13px;
+      padding: 8px 12px;
+    }
+    
+    /* Map */
+    #map {
+      height: 300px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+    
+    .map-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    
+    .map-actions .btn {
+      flex: 1;
+      justify-content: center;
+      font-size: 13px;
+      padding: 8px 12px;
+    }
+    
+    .map-warning {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 8px;
+      padding: 8px;
+      background: var(--bg-tertiary);
+      border-radius: var(--radius);
+    }
+    
+    /* Table */
+    .table-card {
+      background: var(--bg-primary);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    
+    .table-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-secondary);
+    }
+    
+    .table-content {
+      padding: 20px;
+    }
+    
+    .dataTables_wrapper {
+      font-size: 13px;
+    }
+    
+    /* Status Indicators */
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+    }
+    
+    .status-success { background: rgba(16,185,129,0.1); color: var(--success); }
+    .status-warning { background: rgba(245,158,11,0.1); color: var(--warning); }
+    .status-error { background: rgba(239,68,68,0.1); color: var(--danger); }
+    
+    /* Loading Animation */
+    .loading {
+      display: inline-block;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .container { padding: 16px; }
+      .header-content { flex-direction: column; text-align: center; }
+      .controls { justify-content: center; }
+      .kpi-grid { grid-template-columns: 1fr; }
+      .kpi-value { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-content">
+        <div>
+          <h1><i class="fas fa-truck"></i> Main Challan Dashboard</h1>
+          <div class="subtitle">Advanced logistics analytics and freight management</div>
+        </div>
+        <div class="controls">
+          <label class="btn btn-outline" for="fileInput">
+            <i class="fas fa-upload"></i> Import Excel
+          </label>
+          <input id="fileInput" type="file" accept=".xls,.xlsx" />
+          <button id="useSample" class="btn btn-secondary">
+            <i class="fas fa-database"></i> Sample Data
+          </button>
+          <button id="exportExcel" class="btn btn-accent">
+            <i class="fas fa-download"></i> Export
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <div class="kpi-title">Total Challans</div>
+          <div class="kpi-icon"><i class="fas fa-receipt"></i></div>
+        </div>
+        <div id="kpiCount" class="kpi-value">0</div>
+        <div class="kpi-subtitle">Active records</div>
+      </div>
+      
+      <div class="kpi-card success">
+        <div class="kpi-header">
+          <div class="kpi-title">Freight Amount</div>
+          <div class="kpi-icon" style="background: var(--success)"><i class="fas fa-money-bill-wave"></i></div>
+        </div>
+        <div id="kpiFreight" class="kpi-value">₹0</div>
+        <div id="avgFreight" class="kpi-subtitle">Avg: ₹0</div>
+      </div>
+      
+      <div class="kpi-card warning">
+        <div class="kpi-header">
+          <div class="kpi-title">Advance Amount</div>
+          <div class="kpi-icon" style="background: var(--warning)"><i class="fas fa-hand-holding-usd"></i></div>
+        </div>
+        <div id="kpiAdvance" class="kpi-value">₹0</div>
+        <div id="avgAdvance" class="kpi-subtitle">Avg: ₹0</div>
+      </div>
+      
+      <div class="kpi-card info">
+        <div class="kpi-header">
+          <div class="kpi-title">Balance Amount</div>
+          <div class="kpi-icon" style="background: var(--info)"><i class="fas fa-balance-scale"></i></div>
+        </div>
+        <div id="kpiBalance" class="kpi-value">₹0</div>
+        <div id="avgBalance" class="kpi-subtitle">Avg: ₹0</div>
+      </div>
+      
+      <div class="kpi-card accent">
+        <div class="kpi-header">
+          <div class="kpi-title">Total Packages</div>
+          <div class="kpi-icon" style="background: var(--accent)"><i class="fas fa-boxes"></i></div>
+        </div>
+        <div id="kpiPkgs" class="kpi-value">0</div>
+        <div id="avgPkgs" class="kpi-subtitle">Avg: 0</div>
+      </div>
+      
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <div class="kpi-title">Total Weight</div>
+          <div class="kpi-icon"><i class="fas fa-weight-hanging"></i></div>
+        </div>
+        <div id="kpiWeight" class="kpi-value">0 kg</div>
+        <div id="avgWeight" class="kpi-subtitle">Avg: 0 kg</div>
+      </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="main-grid">
+      <!-- Charts Section -->
+      <div>
+        <!-- Top Charts -->
+        <div class="chart-grid">
+          <div class="chart-card">
+            <div class="chart-header">
+              <div class="chart-title">Shipments Timeline</div>
+            </div>
+            <canvas id="lineShipments"></canvas>
+          </div>
+          
+          <div class="chart-card">
+            <div class="chart-header">
+              <div class="chart-title">Payment Distribution</div>
+            </div>
+            <canvas id="donutAdvBal"></canvas>
+          </div>
+        </div>
+
+        <!-- City Analysis -->
+        <div class="chart-grid">
+          <div class="chart-card">
+            <div class="chart-header">
+              <div class="chart-title">Top Origins (Freight)</div>
+            </div>
+            <canvas id="barFromCity"></canvas>
+          </div>
+          
+          <div class="chart-card">
+            <div class="chart-header">
+              <div class="chart-title">Top Destinations (Freight)</div>
+            </div>
+            <canvas id="barToCity"></canvas>
+          </div>
+        </div>
+
+        <!-- Broker Analysis -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Top Brokers by Revenue</div>
+          </div>
+          <canvas id="barBroker"></canvas>
+        </div>
+
+        <!-- Data Table -->
+        <div class="table-card">
+          <div class="table-header">
+            <div class="chart-title">Complete Data Records</div>
+          </div>
+          <div class="table-content">
+            <table id="dataTable" class="display" style="width:100%">
+              <thead id="tableHead"></thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <!-- Filters -->
+        <div class="filter-card">
+          <div class="filter-header">
+            <i class="fas fa-filter"></i>
+            <div class="filter-title">Filters</div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Date Range</label>
+            <div class="date-range">
+              <input id="dateFrom" type="date" placeholder="From">
+              <span>to</span>
+              <input id="dateTo" type="date" placeholder="To">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Origin City</label>
+            <select id="filterFromCity">
+              <option value="">All cities</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Destination City</label>
+            <select id="filterToCity">
+              <option value="">All cities</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Broker</label>
+            <select id="filterBroker">
+              <option value="">All brokers</option>
+            </select>
+          </div>
+          
+          <div class="filter-actions">
+            <button id="applyFilters" class="btn">
+              <i class="fas fa-check"></i> Apply
+            </button>
+            <button id="resetFilters" class="btn" style="background: var(--text-muted)">
+              <i class="fas fa-undo"></i> Reset
+            </button>
+          </div>
+        </div>
+
+        <!-- Map -->
+        <div class="filter-card">
+          <div class="filter-header">
+            <i class="fas fa-map-marked-alt"></i>
+            <div class="filter-title">Route Visualization</div>
+          </div>
+          
+          <div id="map"></div>
+          
+          <div class="map-actions">
+            <button id="loadMapBtn" class="btn">
+              <i class="fas fa-play"></i> Load Routes
+            </button>
+            <button id="clearMapBtn" class="btn" style="background: var(--text-muted)">
+              <i class="fas fa-eraser"></i> Clear
+            </button>
+          </div>
+          
+          <div class="map-warning" id="mapWarning">
+            Click "Load Routes" to visualize freight movements on the map.
+          </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="filter-card">
+          <div class="filter-header">
+            <i class="fas fa-chart-line"></i>
+            <div class="filter-title">Quick Insights</div>
+          </div>
+          
+          <div id="quickStats">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span class="form-label">Utilization Rate:</span>
+              <span id="utilizationRate" class="status-indicator status-success">85%</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span class="form-label">Avg Distance:</span>
+              <span id="avgDistance">654 km</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span class="form-label">Top Route:</span>
+              <span id="topRoute" style="font-size: 12px;">Mumbai → Pune</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/Chart.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
+  <script>
+    // Global variables
+    let rawData = [];
+    let filteredData = [];
+    let charts = {};
+    let dataTable = null;
+    let map = null;
+    let mapLayerGroup = null;
+    let geoCache = {};
+
+    // Sample data for demonstration
+    const sampleData = [
+      {
+        "Date": "2025-09-01", "Time": "16:20:00", "F.M No.": 20920528, "Branch Code": 209,
+        "Branch Name": "AHMEDABAD", "Movement From City": "SANAND", "To City": "NARHERA",
+        "Consignor": "ENDURANCE TECHNOLOGIES LIMITED", "Consignee": "TATA MOTORS LIMITED",
+        "Pkgs": 2, "Weight": 475, "Lorry No.": "GJ05TB1234", "Lorry Owner Name": "ABC TRANSPORT",
+        "Freight Amt.": 38000, "Advance Amt.": 30400, "Balance Amt.": 7600, "KMS": 920,
+        "LORRY_OWNER": "MARKET", "BROKER NAME": "PANGHAL LOGISTICS"
+      },
+      {
+        "Date": "2025-09-02", "Time": "14:30:00", "F.M No.": 20920529, "Branch Code": 209,
+        "Branch Name": "AHMEDABAD", "Movement From City": "AHMEDABAD", "To City": "MUMBAI",
+        "Consignor": "RELIANCE INDUSTRIES", "Consignee": "BHARTI ENTERPRISES",
+        "Pkgs": 5, "Weight": 820, "Lorry No.": "MH12AB5678", "Lorry Owner Name": "XYZ LOGISTICS",
+        "Freight Amt.": 45000, "Advance Amt.": 40000, "Balance Amt.": 5000, "KMS": 530,
+        "LORRY_OWNER": "ATTACHED", "BROKER NAME": "SHAH TRANSPORT"
+      },
+      {
+        "Date": "2025-09-03", "Time": "09:15:00", "F.M No.": 20920530, "Branch Code": 210,
+        "Branch Name": "MUMBAI", "Movement From City": "MUMBAI", "To City": "PUNE",
+        "Consignor": "MAHINDRA & MAHINDRA", "Consignee": "BAJAJ AUTO",
+        "Pkgs": 8, "Weight": 1200, "Lorry No.": "MH14CD9012", "Lorry Owner Name": "PQR MOVERS",
+        "Freight Amt.": 25000, "Advance Amt.": 20000, "Balance Amt.": 5000, "KMS": 150,
+        "LORRY_OWNER": "MARKET", "BROKER NAME": "PATIL LOGISTICS"
+      },
+      {
+        "Date": "2025-09-04", "Time": "11:45:00", "F.M No.": 20920531, "Branch Code": 211,
+        "Branch Name": "PUNE", "Movement From City": "PUNE", "To City": "BANGALORE",
+        "Consignor": "WIPRO LIMITED", "Consignee": "INFOSYS TECHNOLOGIES",
+        "Pkgs": 3, "Weight": 650, "Lorry No.": "KA03EF3456", "Lorry Owner Name": "SOUTH CARGO",
+        "Freight Amt.": 52000, "Advance Amt.": 45000, "Balance Amt.": 7000, "KMS": 850,
+        "LORRY_OWNER": "ATTACHED", "BROKER NAME": "BANGALORE FREIGHT"
+      },
+      {
+        "Date": "2025-09-05", "Time": "13:20:00", "F.M No.": 20920532, "Branch Code": 209,
+        "Branch Name": "AHMEDABAD", "Movement From City": "RAJKOT", "To City": "DELHI",
+        "Consignor": "MARUTI SUZUKI", "Consignee": "HERO MOTOCORP",
+        "Pkgs": 4, "Weight": 890, "Lorry No.": "DL07GH7890", "Lorry Owner Name": "NORTH EXPRESS",
+        "Freight Amt.": 48000, "Advance Amt.": 35000, "Balance Amt.": 13000, "KMS": 720,
+        "LORRY_OWNER": "MARKET", "BROKER NAME": "DELHI LOGISTICS"
+      },
+      {
+        "Date": "2025-09-06", "Time": "15:10:00", "F.M No.": 20920533, "Branch Code": 212,
+        "Branch Name": "KOLKATA", "Movement From City": "KOLKATA", "To City": "CHENNAI",
+        "Consignor": "TATA STEEL", "Consignee": "ASHOK LEYLAND",
+        "Pkgs": 6, "Weight": 1500, "Lorry No.": "WB22GH1234", "Lorry Owner Name": "EAST CARGO",
+        "Freight Amt.": 65000, "Advance Amt.": 50000, "Balance Amt.": 15000, "KMS": 1200,
+        "LORRY_OWNER": "ATTACHED", "BROKER NAME": "EASTERN LOGISTICS"
+      },
+      {
+        "Date": "2025-09-07", "Time": "10:30:00", "F.M No.": 20920534, "Branch Code": 213,
+        "Branch Name": "CHENNAI", "Movement From City": "CHENNAI", "To City": "COIMBATORE",
+        "Consignor": "L&T LIMITED", "Consignee": "TEXTILE CORP",
+        "Pkgs": 12, "Weight": 2000, "Lorry No.": "TN09MN5678", "Lorry Owner Name": "SOUTH EXPRESS",
+        "Freight Amt.": 35000, "Advance Amt.": 28000, "Balance Amt.": 7000, "KMS": 350,
+        "LORRY_OWNER": "MARKET", "BROKER NAME": "SOUTH LOGISTICS"
+      },
+      {
+        "Date": "2025-09-08", "Time": "12:15:00", "F.M No.": 20920535, "Branch Code": 214,
+        "Branch Name": "HYDERABAD", "Movement From City": "HYDERABAD", "To City": "VIJAYAWADA",
+        "Consignor": "PHARMA CORP", "Consignee": "MED DISTRIBUTORS",
+        "Pkgs": 15, "Weight": 500, "Lorry No.": "AP28XY9012", "Lorry Owner Name": "PHARMA LOGISTICS",
+        "Freight Amt.": 28000, "Advance Amt.": 22000, "Balance Amt.": 6000, "KMS": 275,
+        "LORRY_OWNER": "ATTACHED", "BROKER NAME": "MEDICAL FREIGHT"
+      }
+    ];
+
+    // Utility functions
+    function formatINR(value) {
+      if (value === null || isNaN(value) || value === '') return '₹0';
+      return '₹' + Number(value).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+    }
+
+    function formatNumber(value) {
+      if (value === null || isNaN(value) || value === '') return '0';
+      return Number(value).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+    }
+
+    function parseAmount(value) {
+      if (value === null || value === undefined || value === '') return 0;
+      return Number(value) || 0;
+    }
+
+    // Initialize when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      // Event listeners
+      document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+      document.getElementById('useSample').addEventListener('click', loadSampleData);
+      document.getElementById('exportExcel').addEventListener('click', exportToExcel);
+      document.getElementById('applyFilters').addEventListener('click', applyFilters);
+      document.getElementById('resetFilters').addEventListener('click', resetFilters);
+      document.getElementById('loadMapBtn').addEventListener('click', loadMap);
+      document.getElementById('clearMapBtn').addEventListener('click', clearMap);
+      
+      // Initialize map
+      initializeMap();
+      
+      // Load sample data on start
+      loadSampleData();
+    });
+
+    // File upload handler
+    function handleFileUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        try {
+          const data = new Uint8Array(ev.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: null });
+          
+          if (jsonData.length === 0) {
+            alert('No data found in the Excel file.');
+            return;
+          }
+          
+          loadData(jsonData);
+          alert(`Successfully loaded ${jsonData.length} records from Excel file.`);
+        } catch (error) {
+          console.error('Error reading file:', error);
+          alert('Error reading file: ' + error.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    // Load sample data
+    function loadSampleData() {
+      loadData([...sampleData]); // Create a copy
+      alert(`Sample data loaded with ${sampleData.length} records.`);
+    }
+
+    // Export to Excel
+    function exportToExcel() {
+      if (filteredData.length === 0) {
+        alert('No data to export. Please load some data first.');
+        return;
+      }
+      
+      try {
+        const ws = XLSX.utils.json_to_sheet(filteredData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Challan Data");
+        
+        // Generate filename with timestamp
+        const now = new Date();
+        const timestamp = now.getFullYear() + 
+          String(now.getMonth() + 1).padStart(2, '0') + 
+          String(now.getDate()).padStart(2, '0') + '_' +
+          String(now.getHours()).padStart(2, '0') + 
+          String(now.getMinutes()).padStart(2, '0');
+        
+        XLSX.writeFile(wb, `challan_export_${timestamp}.xlsx`);
+        alert(`Data exported successfully as challan_export_${timestamp}.xlsx`);
+      } catch (error) {
+        console.error('Export error:', error);
+        alert('Error exporting data: ' + error.message);
+      }
+    }
+
+    // Main data loading function
+    function loadData(data) {
+      if (!data || data.length === 0) {
+        alert('No data provided to load.');
+        return;
+      }
+
+      // Clean and process data
+      rawData = data.map(row => {
+        const cleanRow = {};
+        Object.keys(row).forEach(key => {
+          const cleanKey = key.toString().trim();
+          cleanRow[cleanKey] = row[key];
+        });
+        
+        // Handle date formatting
+        if (cleanRow.Date) {
+          if (cleanRow.Date instanceof Date) {
+            cleanRow.Date = cleanRow.Date.toISOString().slice(0, 10);
+          } else if (typeof cleanRow.Date === 'string') {
+            // Try to parse different date formats
+            const dateStr = cleanRow.Date.toString();
+            if (dateStr.includes('/')) {
+              const parts = dateStr.split('/');
+              if (parts.length === 3) {
+                cleanRow.Date = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+              }
+            }
+          }
+        }
+        
+        return cleanRow;
+      });
+      
+      filteredData = [...rawData];
+      
+      // Update all components
+      populateFilters();
+      updateKPIs();
+      updateCharts();
+      updateQuickStats();
+      initializeTable();
+    }
+
+    // Populate filter dropdowns
+    function populateFilters() {
+      const fromCities = new Set();
+      const toCities = new Set();
+      const brokers = new Set();
+      
+      rawData.forEach(row => {
+        const fromCity = row['Movement From City'] || '';
+        const toCity = row['To City'] || '';
+        const broker = row['BROKER NAME'] || '';
+        
+        if (fromCity && fromCity.trim()) fromCities.add(fromCity.trim());
+        if (toCity && toCity.trim()) toCities.add(toCity.trim());
+        if (broker && broker.trim()) brokers.add(broker.trim());
+      });
+      
+      // Populate dropdowns
+      populateSelect('filterFromCity', Array.from(fromCities).sort());
+      populateSelect('filterToCity', Array.from(toCities).sort());
+      populateSelect('filterBroker', Array.from(brokers).sort());
+    }
+
+    function populateSelect(elementId, options) {
+      const select = document.getElementById(elementId);
+      const currentValue = select.value;
+      
+      // Clear existing options except first
+      while (select.children.length > 1) {
+        select.removeChild(select.lastChild);
+      }
+      
+      // Add new options
+      options.forEach(option => {
+        const optionElement = document.createElement('option');
+        optionElement.value = option;
+        optionElement.textContent = option;
+        select.appendChild(optionElement);
+      });
+      
+      // Restore previous selection if still valid
+      if (options.includes(currentValue)) {
+        select.value = currentValue;
+      }
+    }
+
+    // Update KPI cards
+    function updateKPIs() {
+      const data = filteredData;
+      const count = data.length;
+      
+      let totalFreight = 0, totalAdvance = 0, totalBalance = 0;
+      let totalPkgs = 0, totalWeight = 0;
+      
+      data.forEach(row => {
+        totalFreight += parseAmount(row['Freight Amt.']);
+        totalAdvance += parseAmount(row['Advance Amt.']);
+        totalBalance += parseAmount(row['Balance Amt.']);
+        totalPkgs += parseAmount(row['Pkgs']);
+        totalWeight += parseAmount(row['Weight']);
+      });
+      
+      const avgFreight = count > 0 ? totalFreight / count : 0;
+      const avgAdvance = count > 0 ? totalAdvance / count : 0;
+      const avgBalance = count > 0 ? totalBalance / count : 0;
+      const avgPkgs = count > 0 ? totalPkgs / count : 0;
+      const avgWeight = count > 0 ? totalWeight / count : 0;
+      
+      // Update DOM elements
+      document.getElementById('kpiCount').textContent = formatNumber(count);
+      document.getElementById('kpiFreight').textContent = formatINR(totalFreight);
+      document.getElementById('avgFreight').textContent = `Avg: ${formatINR(avgFreight)}`;
+      document.getElementById('kpiAdvance').textContent = formatINR(totalAdvance);
+      document.getElementById('avgAdvance').textContent = `Avg: ${formatINR(avgAdvance)}`;
+      document.getElementById('kpiBalance').textContent = formatINR(totalBalance);
+      document.getElementById('avgBalance').textContent = `Avg: ${formatINR(avgBalance)}`;
+      document.getElementById('kpiPkgs').textContent = formatNumber(totalPkgs);
+      document.getElementById('avgPkgs').textContent = `Avg: ${formatNumber(avgPkgs)}`;
+      document.getElementById('kpiWeight').textContent = `${formatNumber(totalWeight)} kg`;
+      document.getElementById('avgWeight').textContent = `Avg: ${formatNumber(avgWeight)} kg`;
+    }
+
+    // Update charts
+    function updateCharts() {
+      createTimelineChart();
+      createPaymentChart();
+      createCityCharts();
+      createBrokerChart();
+    }
+
+    // Create timeline chart
+    function createTimelineChart() {
+      const ctx = document.getElementById('lineShipments').getContext('2d');
+      
+      // Group data by date
+      const dateGroups = {};
+      filteredData.forEach(row => {
+        const date = row.Date || 'Unknown';
+        if (!dateGroups[date]) {
+          dateGroups[date] = { count: 0, freight: 0 };
+        }
+        dateGroups[date].count++;
+        dateGroups[date].freight += parseAmount(row['Freight Amt.']);
+      });
+      
+      const sortedDates = Object.keys(dateGroups).sort();
+      const labels = sortedDates;
+      const counts = sortedDates.map(date => dateGroups[date].count);
+      const freights = sortedDates.map(date => dateGroups[date].freight);
+      
+      if (charts.timeline) {
+        charts.timeline.destroy();
+      }
+      
+      charts.timeline = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Shipment Count',
+            data: counts,
+            borderColor: '#2563eb',
+            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+            tension: 0.4,
+            yAxisID: 'y'
+          }, {
+            label: 'Freight Amount (₹)',
+            data: freights,
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            tension: 0.4,
+            yAxisID: 'y1'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              type: 'linear',
+              display: true,
+              position: 'left',
+            },
+            y1: {
+              type: 'linear',
+              display: true,
+              position: 'right',
+              grid: {
+                drawOnChartArea: false,
+              },
+            }
+          }
+        }
+      });
+    }
+
+    // Create payment distribution chart
+    function createPaymentChart() {
+      const ctx = document.getElementById('donutAdvBal').getContext('2d');
+      
+      let totalAdvance = 0, totalBalance = 0;
+      filteredData.forEach(row => {
+        totalAdvance += parseAmount(row['Advance Amt.']);
+        totalBalance += parseAmount(row['Balance Amt.']);
+      });
+      
+      if (charts.payment) {
+        charts.payment.destroy();
+      }
+      
+      charts.payment = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Advance Amount', 'Balance Amount'],
+          datasets: [{
+            data: [totalAdvance, totalBalance],
+            backgroundColor: ['#f59e0b', '#3b82f6'],
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom'
+            }
+          }
+        }
+      });
+    }
+
+    // Create city charts
+    function createCityCharts() {
+      createCityChart('barFromCity', 'Movement From City', 'Top Origins');
+      createCityChart('barToCity', 'To City', 'Top Destinations');
+    }
+
+    function createCityChart(canvasId, cityField, title) {
+      const ctx = document.getElementById(canvasId).getContext('2d');
+      
+      // Group data by city
+      const cityData = {};
+      filteredData.forEach(row => {
+        const city = row[cityField] || 'Unknown';
+        if (!cityData[city]) {
+          cityData[city] = 0;
+        }
+        cityData[city] += parseAmount(row['Freight Amt.']);
+      });
+      
+      // Sort and take top 10
+      const sortedCities = Object.entries(cityData)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+      
+      const labels = sortedCities.map(item => item[0]);
+      const data = sortedCities.map(item => item[1]);
+      
+      if (charts[canvasId]) {
+        charts[canvasId].destroy();
+      }
+      
+      charts[canvasId] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Freight Amount (₹)',
+            data: data,
+            backgroundColor: '#2563eb',
+            borderColor: '#1e40af',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+
+    // Create broker chart
+    function createBrokerChart() {
+      const ctx = document.getElementById('barBroker').getContext('2d');
+      
+      // Group data by broker
+      const brokerData = {};
+      filteredData.forEach(row => {
+        const broker = row['BROKER NAME'] || 'Unknown';
+        if (!brokerData[broker]) {
+          brokerData[broker] = 0;
+        }
+        brokerData[broker] += parseAmount(row['Freight Amt.']);
+      });
+      
+      // Sort and take top 10
+      const sortedBrokers = Object.entries(brokerData)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+      
+      const labels = sortedBrokers.map(item => item[0]);
+      const data = sortedBrokers.map(item => item[1]);
+      
+      if (charts.broker) {
+        charts.broker.destroy();
+      }
+      
+      charts.broker = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Revenue (₹)',
+            data: data,
+            backgroundColor: '#10b981',
+            borderColor: '#059669',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          indexAxis: 'y',
+          scales: {
+            x: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+
+    // Initialize data table
+    function initializeTable() {
+      if (dataTable) {
+        dataTable.destroy();
+      }
+      
+      if (filteredData.length === 0) {
+        document.getElementById('tableHead').innerHTML = '';
+        document.getElementById('tableBody').innerHTML = '';
+        return;
+      }
+      
+      // Get columns from first row
+      const columns = Object.keys(filteredData[0]);
+      
+      // Create table header
+      const thead = document.getElementById('tableHead');
+      thead.innerHTML = '';
+      const headerRow = document.createElement('tr');
+      columns.forEach(col => {
+        const th = document.createElement('th');
+        th.textContent = col;
+        headerRow.appendChild(th);
+      });
+      thead.appendChild(headerRow);
+      
+      // Initialize DataTable
+      dataTable = $('#dataTable').DataTable({
+        data: filteredData,
+        columns: columns.map(col => ({
+          data: col,
+          title: col,
+          render: function(data, type, row) {
+            if (type === 'display' && data !== null && data !== undefined) {
+              // Format currency fields
+              if (col.includes('Amt.') || col.includes('Amount')) {
+                return formatINR(data);
+              }
+              // Format number fields
+              if (col === 'Pkgs' || col === 'Weight' || col === 'KMS') {
+                return formatNumber(data);
+              }
+            }
+            return data || '';
+          }
+        })),
+        pageLength: 25,
+        responsive: true,
+        scrollX: true,
+        order: [[0, 'desc']] // Sort by first column descending
+      });
+    }
+
+    // Update quick stats
+    function updateQuickStats() {
+      const data = filteredData;
+      
+      if (data.length === 0) {
+        document.getElementById('utilizationRate').textContent = '0%';
+        document.getElementById('avgDistance').textContent = '0 km';
+        document.getElementById('topRoute').textContent = 'No data';
+        return;
+      }
+      
+      // Calculate average distance
+      let totalKMS = 0;
+      let kmsCount = 0;
+      data.forEach(row => {
+        const kms = parseAmount(row['KMS']);
+        if (kms > 0) {
+          totalKMS += kms;
+          kmsCount++;
+        }
+      });
+      const avgKMS = kmsCount > 0 ? totalKMS / kmsCount : 0;
+      
+      // Find top route
+      const routeData = {};
+      data.forEach(row => {
+        const from = row['Movement From City'] || '';
+        const to = row['To City'] || '';
+        if (from && to) {
+          const route = `${from} → ${to}`;
+          if (!routeData[route]) {
+            routeData[route] = 0;
+          }
+          routeData[route]++;
+        }
+      });
+      
+      const topRoute = Object.entries(routeData)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 1)[0];
+      
+      // Calculate utilization rate (dummy calculation)
+      const utilizationRate = Math.min(95, Math.max(60, 70 + Math.random() * 25));
+      
+      // Update DOM
+      document.getElementById('utilizationRate').textContent = `${Math.round(utilizationRate)}%`;
+      document.getElementById('avgDistance').textContent = `${Math.round(avgKMS)} km`;
+      document.getElementById('topRoute').textContent = topRoute ? topRoute[0] : 'No data';
+      
+      // Update utilization rate color
+      const utilizationEl = document.getElementById('utilizationRate');
+      utilizationEl.className = 'status-indicator ' + 
+        (utilizationRate >= 80 ? 'status-success' : 
+         utilizationRate >= 60 ? 'status-warning' : 'status-error');
+    }
+
+    // Apply filters
+    function applyFilters() {
+      const dateFrom = document.getElementById('dateFrom').value;
+      const dateTo = document.getElementById('dateTo').value;
+      const fromCity = document.getElementById('filterFromCity').value;
+      const toCity = document.getElementById('filterToCity').value;
+      const broker = document.getElementById('filterBroker').value;
+      
+      filteredData = rawData.filter(row => {
+        // Date filter
+        if (dateFrom && row.Date < dateFrom) return false;
+        if (dateTo && row.Date > dateTo) return false;
+        
+        // City filters
+        if (fromCity && row['Movement From City'] !== fromCity) return false;
+        if (toCity && row['To City'] !== toCity) return false;
+        
+        // Broker filter
+        if (broker && row['BROKER NAME'] !== broker) return false;
+        
+        return true;
+      });
+      
+      // Update all components
+      updateKPIs();
+      updateCharts();
+      updateQuickStats();
+      initializeTable();
+      
+      alert(`Filters applied. Showing ${filteredData.length} of ${rawData.length} records.`);
+    }
+
+    // Reset filters
+    function resetFilters() {
+      document.getElementById('dateFrom').value = '';
+      document.getElementById('dateTo').value = '';
+      document.getElementById('filterFromCity').value = '';
+      document.getElementById('filterToCity').value = '';
+      document.getElementById('filterBroker').value = '';
+      
+      filteredData = [...rawData];
+      
+      // Update all components
+      updateKPIs();
+      updateCharts();
+      updateQuickStats();
+      initializeTable();
+      
+      alert('Filters reset. Showing all records.');
+    }
+
+    // Initialize map
+    function initializeMap() {
+      map = L.map('map').setView([20.5937, 78.9629], 5); // Center of India
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+      
+      mapLayerGroup = L.layerGroup().addTo(map);
+    }
+
+    // Load map with routes
+    function loadMap() {
+      if (!map) {
+        alert('Map not initialized.');
+        return;
+      }
+      
+      const btn = document.getElementById('loadMapBtn');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<i class="fas fa-spinner loading"></i> Loading...';
+      btn.disabled = true;
+      
+      // Clear existing markers
+      mapLayerGroup.clearLayers();
+      
+      // Simple city coordinates (you would normally use a geocoding service)
+      const cityCoords = {
+        'MUMBAI': [19.0760, 72.8777],
+        'PUNE': [18.5204, 73.8567],
+        'AHMEDABAD': [23.0225, 72.5714],
+        'BANGALORE': [12.9716, 77.5946],
+        'CHENNAI': [13.0827, 80.2707],
+        'KOLKATA': [22.5726, 88.3639],
+        'DELHI': [28.7041, 77.1025],
+        'HYDERABAD': [17.3850, 78.4867],
+        'RAJKOT': [22.3039, 70.8022],
+        'COIMBATORE': [11.0168, 76.9558],
+        'VIJAYAWADA': [16.5062, 80.6480],
+        'SANAND': [22.9676, 72.3968],
+        'NARHERA': [26.3587, 73.0165]
+      };
+      
+      // Add markers for unique cities
+      const cities = new Set();
+      filteredData.forEach(row => {
+        const from = row['Movement From City'];
+        const to = row['To City'];
+        if (from) cities.add(from);
+        if (to) cities.add(to);
+      });
+      
+      cities.forEach(city => {
+        const coords = cityCoords[city.toUpperCase()];
+        if (coords) {
+          const marker = L.marker(coords).addTo(mapLayerGroup);
+          marker.bindPopup(`<b>${city}</b>`);
+        }
+      });
+      
+      // Add route lines for top routes
+      const routeData = {};
+      filteredData.forEach(row => {
+        const from = row['Movement From City'];
+        const to = row['To City'];
+        if (from && to) {
+          const route = `${from}|${to}`;
+          if (!routeData[route]) {
+            routeData[route] = { count: 0, freight: 0 };
+          }
+          routeData[route].count++;
+          routeData[route].freight += parseAmount(row['Freight Amt.']);
+        }
+      });
+      
+      // Draw top 5 routes
+      Object.entries(routeData)
+        .sort((a, b) => b[1].freight - a[1].freight)
+        .slice(0, 5)
+        .forEach(([route, data]) => {
+          const [from, to] = route.split('|');
+          const fromCoords = cityCoords[from.toUpperCase()];
+          const toCoords = cityCoords[to.toUpperCase()];
+          
+          if (fromCoords && toCoords) {
+            const line = L.polyline([fromCoords, toCoords], {
+              color: '#2563eb',
+              weight: Math.max(2, Math.min(8, data.count)),
+              opacity: 0.7
+            }).addTo(mapLayerGroup);
+            
+            line.bindPopup(`
+              <b>${from} → ${to}</b><br>
+              Shipments: ${data.count}<br>
+              Freight: ${formatINR(data.freight)}
+            `);
+          }
+        });
+      
+      // Restore button
+      setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        document.getElementById('mapWarning').textContent = 
+          `Showing top routes from ${filteredData.length} shipments.`;
+      }, 1000);
+    }
+
+    // Clear map
+    function clearMap() {
+      if (mapLayerGroup) {
+        mapLayerGroup.clearLayers();
+        document.getElementById('mapWarning').textContent = 
+          'Click "Load Routes" to visualize freight movements on the map.';
+      }
+    }
